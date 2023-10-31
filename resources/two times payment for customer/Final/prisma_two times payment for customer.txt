@@ -1,0 +1,69 @@
+// Compute Field
+    const prisma = new PrismaClient().$extends({
+      result: {
+        order: {
+          // Add a computed field called `total` to the order
+          total: {
+            needs: {
+              qty: true,
+              current_price: true,
+            },
+            compute(order) {
+              return order.current_price * order.qty;
+            },
+          },
+        },
+      },
+      model: {
+        user: {
+          // Create custom method for pyament calculation
+          async getCustomerPayments(installment_price: number) {
+            const users = prisma.user.findMany({
+              select: {
+                name: true,
+                orders: {
+                  select: {
+                    total: true,
+                  },
+                },
+              },
+            });
+
+            interface Payment {
+              name: string;
+              grand_total: number;
+              payment_one: number;
+              payment_two: number;
+            }
+
+            const userPayments: Payment[] = [];
+
+            (await users).map((user) => {
+              let grand_total = 0;
+              let payment_one = 0;
+              let payment_two = 0;
+
+              user.orders.map((order) => {
+                let total = order.total;
+                grand_total += total;
+              });
+
+              if (grand_total > installment_price) {
+                payment_one = installment_price;
+                payment_two = grand_total - installment_price;
+              }
+              userPayments.push({
+                name: user.name,
+                grand_total: grand_total,
+                payment_one: payment_one,
+                payment_two: payment_two,
+              });
+            });
+
+            return userPayments;
+          },
+        },
+      },
+    });
+
+    const customerPayments = await prisma.user.getCustomerPayments(5000);

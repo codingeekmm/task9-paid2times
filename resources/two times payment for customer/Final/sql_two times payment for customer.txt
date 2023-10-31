@@ -1,0 +1,18 @@
+#### Two times payment for customers with total order amount greater than 5000
+
+SELECT t2.name customer, t2.sum,
+	CASE 
+    	WHEN (t2.sum <=5000::FLOAT) THEN 0 
+		WHEN (t2.sum >5000::FLOAT ) THEN  5000			
+   	END payment_one,
+	CASE 
+    	WHEN (t2.sum <=5000::FLOAT) THEN 0 
+		WHEN (t2.sum >5000::FLOAT ) THEN ROUND((t2.sum-5000)::NUMERIC,2)		
+   	END payment_two	   
+FROM(
+	SELECT t1.name, SUM(t1.sum) 
+FROM(SELECT u.name, SUM (o.current_price*o.qty) sum       
+FROM "Order" o JOIN "User" u ON o.user_id = u.id
+GROUP BY u.name, o.current_price, o.qty) t1
+GROUP BY t1.name
+)t2

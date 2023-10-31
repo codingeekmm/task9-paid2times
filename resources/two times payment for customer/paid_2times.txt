@@ -1,0 +1,107 @@
+SELECT u.name, 
+SUM (o.current_price*o.qty) 
+FROM "Order" o 
+JOIN "User" u ON o.user_id = u.id
+GROUP BY u.name
+
+##############
+
+SELECT u.name,u.id, o.id order_id FROM "Order" o JOIN "User" u ON u.id = o.user_id
+
+##############
+
+SELECT *,
+       CASE 
+            WHEN (o.qty IS NULL OR o.qty = 0) AND (o.qty > 100) THEN '100'         	
+       END test
+FROM "Order" o
+
+##############
+
+SELECT o.current_price,
+       CASE 
+            WHEN (o.current_price <=100::FLOAT) THEN 0 
+			WHEN (o.current_price >100::FLOAT ) THEN  100			
+       END payment_one,
+	   CASE     
+	   		WHEN (o.current_price <=100::FLOAT) THEN 0 
+			WHEN (o.current_price >100::FLOAT ) THEN ROUND((o.current_price-100)::NUMERIC,2)
+       END payment_two
+FROM "Order" o
+
+##############
+
+SELECT test.name, SUM (test.sum), SUM(test.payment_one) payment_one, SUM(test.payment_two) payment_two
+FROM (SELECT u.name, SUM (o.current_price*o.qty) sum,
+       CASE 
+            WHEN ((o.current_price*o.qty) <=5000::FLOAT) THEN 0 
+			WHEN ((o.current_price*o.qty) >5000::FLOAT ) THEN  5000			
+       END payment_one,
+	   CASE     
+	   		WHEN ((o.current_price*o.qty) <=5000::FLOAT) THEN 0 
+			WHEN ((o.current_price*o.qty) >5000::FLOAT ) THEN ROUND(((o.current_price*o.qty)-5000)::NUMERIC,2)
+       END payment_two
+FROM "Order" o JOIN "User" u ON o.user_id = u.id
+GROUP BY u.name, o.current_price, o.qty) test
+GROUP BY test.name
+
+
+####  66566
+SELECT  SUM(test.sum) FROM 
+(SELECT u.name,u.id,  o.current_price, o.qty, SUM(o.current_price*o.qty) FROM "Order" o 
+JOIN "User" u ON u.id = o.user_id
+ WHERE u.name = 'Brian'
+GROUP BY u.name,u.id,  o.current_price, o.qty) test
+
+
+####
+SELECT test.name, SUM(test.sum) 
+FROM(SELECT u.name, SUM (o.current_price*o.qty) sum       
+FROM "Order" o JOIN "User" u ON o.user_id = u.id
+GROUP BY u.name, o.current_price, o.qty) test
+GROUP BY test.name
+
+
+
+##### 
+
+SELECT test.name, SUM(test.sum), 
+ 	CASE 
+    	WHEN (test.sum <=5000::FLOAT) THEN 0 
+		WHEN (test.sum >5000::FLOAT ) THEN  5000			
+   	END payment_one,
+	CASE 
+    	WHEN (test.sum <=5000::FLOAT) THEN 0 
+		WHEN (test.sum >5000::FLOAT ) THEN ROUND((test.sum-5000)::NUMERIC,2)		
+   	END payment_two	   
+FROM(
+	SELECT u.name, SUM (o.current_price*o.qty) sum       
+FROM "Order" o JOIN "User" u ON o.user_id = u.id
+GROUP BY u.name, o.current_price, o.qty) 
+test
+GROUP BY test.name, test.sum
+
+
+#### Two times payment for customers with total order amount greater than 5000
+
+SELECT t2.name customer, t2.sum,
+	CASE 
+    	WHEN (t2.sum <=5000::FLOAT) THEN 0 
+		WHEN (t2.sum >5000::FLOAT ) THEN  5000			
+   	END payment_one,
+	CASE 
+    	WHEN (t2.sum <=5000::FLOAT) THEN 0 
+		WHEN (t2.sum >5000::FLOAT ) THEN ROUND((t2.sum-5000)::NUMERIC,2)		
+   	END payment_two	   
+FROM(
+	SELECT t1.name, SUM(t1.sum) 
+FROM(SELECT u.name, SUM (o.current_price*o.qty) sum       
+FROM "Order" o JOIN "User" u ON o.user_id = u.id
+GROUP BY u.name, o.current_price, o.qty) t1
+GROUP BY t1.name
+)t2
+
+
+###### PRISMA
+Getting Counts on Relations with Prisma Client
+https://www.youtube.com/watch?v=J3ChnH9bO6A
